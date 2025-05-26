@@ -55,11 +55,9 @@ func (q *QuizGame) QuizStart(records [][]string) {
 			q.displayResults(len(records))
 			return
 		}
-		q.displayResults(len(records))
 	}
 
 	q.displayResults(len(records))
-
 }
 
 func (q *QuizGame) readLine() string {
