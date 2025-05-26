@@ -5,7 +5,6 @@ import (
 	"encoding/csv"
 	"io"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -39,16 +38,6 @@ func (q *QuizGame) Read() ([][]string, error) {
 
 func (q *QuizGame) QuizStart(records [][]string) {
 	q.out.Write([]byte("Please hit enter\n"))
-	started := q.readLine()
-	started = strings.TrimSuffix(started, "\n")
-
-	if started == "" {
-		q.start(records)
-	}
-
-}
-
-func (q *QuizGame) start(records [][]string) {
 	correct := make(chan struct{})
 	for _, record := range records {
 		q.out.Write([]byte(record[0] + "\n"))
@@ -68,6 +57,8 @@ func (q *QuizGame) start(records [][]string) {
 		}
 		q.displayResults(len(records))
 	}
+
+	q.displayResults(len(records))
 
 }
 

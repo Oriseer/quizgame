@@ -70,7 +70,7 @@ func TestQuiz(t *testing.T) {
 `
 		displayMsg := fmt.Sprintf("You got %d out of %d questions correct\n", 5, 5)
 		want += displayMsg
-		gotCSV := NewQuizGame(strings.NewReader(inputCSV), buf, stringReader("", "10", "10", "2", "11", "3"), time.Duration(5*time.Second))
+		gotCSV := NewQuizGame(strings.NewReader(inputCSV), buf, stringReader("10", "10", "2", "11", "3"), time.Duration(5*time.Second))
 
 		csvData, err := gotCSV.Read()
 
@@ -92,7 +92,7 @@ time is up!
 `
 		displayMsg := fmt.Sprintf("You got %d out of %d questions correct\n", 0, 1)
 		want += displayMsg
-		gotCSV := NewQuizGame(strings.NewReader(inputCSV), buf, stringReader("", "10"), time.Duration(0*time.Millisecond))
+		gotCSV := NewQuizGame(strings.NewReader(inputCSV), buf, stringReader("10"), time.Duration(0*time.Millisecond))
 
 		csvData, err := gotCSV.Read()
 
