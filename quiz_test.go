@@ -7,10 +7,12 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 var dummyWriter io.Writer
 var dummyReader io.Reader
+var dummyTimeDuration time.Duration
 
 func TestQuiz(t *testing.T) {
 	t.Run("Open and Read CSV file", func(t *testing.T) {
@@ -38,7 +40,7 @@ func TestQuiz(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				gotCSV := NewQuizGame(strings.NewReader(tt.inputCSV), dummyWriter, dummyReader)
+				gotCSV := NewQuizGame(strings.NewReader(tt.inputCSV), dummyWriter, dummyReader, dummyTimeDuration)
 
 				rec, err := gotCSV.Read()
 
@@ -59,7 +61,8 @@ func TestQuiz(t *testing.T) {
 8+3,11
 1+2,3
 `
-		want := `5+5
+		want := `Please hit enter
+5+5
 7+3
 1+1
 8+3
@@ -67,7 +70,7 @@ func TestQuiz(t *testing.T) {
 `
 		displayMsg := fmt.Sprintf("You got %d out of %d questions correct\n", 5, 5)
 		want += displayMsg
-		gotCSV := NewQuizGame(strings.NewReader(inputCSV), buf, stringReader("10", "10", "2", "11", "3"))
+		gotCSV := NewQuizGame(strings.NewReader(inputCSV), buf, stringReader("10", "10", "2", "11", "3"), time.Duration(5*time.Second))
 
 		csvData, err := gotCSV.Read()
 
@@ -77,6 +80,26 @@ func TestQuiz(t *testing.T) {
 		assertString(t, buf.String(), want)
 		assertInt(t, gotCSV.Counter, 5)
 
+	})
+	t.Run("run quiz with timer", func(t *testing.T) {
+		buf := &bytes.Buffer{}
+
+		inputCSV := `5+5,10
+`
+		want := `Please hit enter
+5+5
+time is up!
+`
+		displayMsg := fmt.Sprintf("You got %d out of %d questions correct\n", 0, 1)
+		want += displayMsg
+		gotCSV := NewQuizGame(strings.NewReader(inputCSV), buf, stringReader("10"), time.Duration(0*time.Millisecond))
+
+		csvData, err := gotCSV.Read()
+
+		assertNoErr(t, err)
+
+		gotCSV.QuizStart(csvData)
+		assertString(t, buf.String(), want)
 	})
 
 }
