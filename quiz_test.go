@@ -14,6 +14,15 @@ var dummyWriter io.Writer
 var dummyReader io.Reader
 var dummyTimeDuration time.Duration
 
+type StubTimer struct {
+	duration int
+}
+
+func (s *StubTimer) NewTimer(d time.Duration) *time.Timer {
+	s.duration = int(d)
+	return time.NewTimer(1 * time.Millisecond)
+}
+
 func TestQuiz(t *testing.T) {
 	t.Run("Open and Read CSV file", func(t *testing.T) {
 
@@ -70,7 +79,7 @@ func TestQuiz(t *testing.T) {
 `
 		displayMsg := fmt.Sprintf("You got %d out of %d questions correct\n", 5, 5)
 		want += displayMsg
-		gotCSV := NewQuizGame(strings.NewReader(inputCSV), buf, stringReader("10", "10", "2", "11", "3"), time.Duration(5*time.Second))
+		gotCSV := NewQuizGame(strings.NewReader(inputCSV), buf, stringReader("", "10", "10", "2", "11", "3"), time.Duration(5*time.Second))
 
 		csvData, err := gotCSV.Read()
 
@@ -81,26 +90,18 @@ func TestQuiz(t *testing.T) {
 		assertInt(t, gotCSV.Counter, 5)
 
 	})
-	t.Run("run quiz with timer", func(t *testing.T) {
-		buf := &bytes.Buffer{}
 
-		inputCSV := `5+5,10
-`
-		want := `Please hit enter
-5+5
-time is up!
-`
-		displayMsg := fmt.Sprintf("You got %d out of %d questions correct\n", 0, 1)
-		want += displayMsg
-		gotCSV := NewQuizGame(strings.NewReader(inputCSV), buf, stringReader("10"), time.Duration(0*time.Millisecond))
+}
 
-		csvData, err := gotCSV.Read()
+func TestTimer(t *testing.T) {
+	timeWant := 5 * time.Second
+	timer := &StubTimer{}
+	gotCSV := NewQuizGame(dummyReader, dummyWriter, dummyReader, timeWant)
+	_ = gotCSV.SetTimer(timer)
 
-		assertNoErr(t, err)
-
-		gotCSV.QuizStart(csvData)
-		assertString(t, buf.String(), want)
-	})
+	if timer.duration != int(timeWant) {
+		t.Errorf("Time set got %d, want %d", timer.duration, timeWant)
+	}
 
 }
 

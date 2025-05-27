@@ -16,7 +16,7 @@ func main() {
 	file, _ := os.Open(*fileName)
 	defer file.Close()
 
-	quizGame := quiz.NewQuizGame(file, os.Stdout, os.Stdin, time.Second*5)
+	quizGame := quiz.NewQuizGame(file, os.Stdout, os.Stdin, time.Duration(5*time.Second))
 	records, err := quizGame.Read()
 	if err != nil {
 		log.Fatalf("Error reading CSV file: %v", err)

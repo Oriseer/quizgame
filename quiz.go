@@ -4,9 +4,25 @@ import (
 	"bufio"
 	"encoding/csv"
 	"io"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 )
+
+type Timer interface {
+	NewTimer(d time.Duration) *time.Timer
+}
+
+type quizTimer struct{}
+
+func (n quizTimer) NewTimer(d time.Duration) *time.Timer {
+	return time.NewTimer(d)
+}
+
+func (q *QuizGame) SetTimer(timer Timer) *time.Timer {
+	return timer.NewTimer(q.timeDuration)
+}
 
 type QuizGame struct {
 	csvReader    io.Reader
@@ -38,26 +54,35 @@ func (q *QuizGame) Read() ([][]string, error) {
 
 func (q *QuizGame) QuizStart(records [][]string) {
 	q.out.Write([]byte("Please hit enter\n"))
-	correct := make(chan struct{})
-	for _, record := range records {
-		q.out.Write([]byte(record[0] + "\n"))
-		go func() {
-			userInput := q.readLine()
-			if userInput == record[1] {
-				correct <- struct{}{}
-			}
-		}()
-		select {
-		case <-correct:
-			q.Counter++
-		case <-time.After(q.timeDuration):
-			q.out.Write([]byte("time is up!\n"))
-			q.displayResults(len(records))
-			return
-		}
+	started := q.readLine()
+	started = strings.TrimSuffix(started, "\n")
+	timer := q.SetTimer(quizTimer{})
+
+	go func() {
+		<-timer.C
+		q.out.Write([]byte("time is up!\n"))
+		q.displayResults(len(records))
+		os.Exit(0) // Exit the program after time is up
+	}()
+
+	if started == "" {
+		q.start(records)
 	}
 
 	q.displayResults(len(records))
+}
+
+func (q *QuizGame) start(records [][]string) {
+	for _, record := range records {
+		question := record[0]
+		correctAnswer := record[1]
+		q.out.Write([]byte(question + "\n"))
+		userAnswer := q.readLine()
+		if correctAnswer == userAnswer {
+			q.Counter++
+		}
+	}
+
 }
 
 func (q *QuizGame) readLine() string {
