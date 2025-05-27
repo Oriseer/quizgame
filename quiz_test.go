@@ -28,10 +28,27 @@ func TestQuiz(t *testing.T) {
 
 		tests := []struct {
 			name           string
+			isShuffle      bool
 			inputCSV       string
 			expectedOutput [][]string
 		}{
 			{name: "valid CSV",
+				isShuffle: false,
+				inputCSV: `5+5,10
+7+3,10
+1+1,2
+8+3,11
+1+2,3`,
+				expectedOutput: [][]string{
+					{"5+5", "10"},
+					{"7+3", "10"},
+					{"1+1", "2"},
+					{"8+3", "11"},
+					{"1+2", "3"},
+				},
+			},
+			{name: "shuffled CSV",
+				isShuffle: true,
 				inputCSV: `5+5,10
 7+3,10
 1+1,2
@@ -49,13 +66,18 @@ func TestQuiz(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				gotCSV := NewQuizGame(strings.NewReader(tt.inputCSV), dummyWriter, dummyReader, dummyTimeDuration)
+				gotCSV := NewQuizGame(strings.NewReader(tt.inputCSV), dummyWriter, dummyReader, dummyTimeDuration, tt.isShuffle)
 
 				rec, err := gotCSV.Read()
 
 				assertNoErr(t, err)
-
-				assertCSV(t, rec, tt.expectedOutput)
+				if isShuffle := tt.isShuffle; isShuffle {
+					if reflect.DeepEqual(rec, tt.expectedOutput) {
+						t.Errorf("Expected shuffled output, but got the same order as input")
+					}
+				} else {
+					assertCSV(t, rec, tt.expectedOutput)
+				}
 			})
 		}
 
@@ -63,6 +85,8 @@ func TestQuiz(t *testing.T) {
 
 	t.Run("display correct questions", func(t *testing.T) {
 		buf := &bytes.Buffer{}
+		in := stringReader("", "10", "10", "2", "11", "3")
+		timeout := 5 * time.Second
 
 		inputCSV := `5+5,10
 7+3,10
@@ -79,7 +103,7 @@ func TestQuiz(t *testing.T) {
 `
 		displayMsg := fmt.Sprintf("You got %d out of %d questions correct\n", 5, 5)
 		want += displayMsg
-		gotCSV := NewQuizGame(strings.NewReader(inputCSV), buf, stringReader("", "10", "10", "2", "11", "3"), time.Duration(5*time.Second))
+		gotCSV := NewQuizGame(strings.NewReader(inputCSV), buf, in, timeout, false)
 
 		csvData, err := gotCSV.Read()
 
@@ -96,7 +120,7 @@ func TestQuiz(t *testing.T) {
 func TestTimer(t *testing.T) {
 	timeWant := 5 * time.Second
 	timer := &StubTimer{}
-	gotCSV := NewQuizGame(dummyReader, dummyWriter, dummyReader, timeWant)
+	gotCSV := NewQuizGame(dummyReader, dummyWriter, dummyReader, timeWant, false)
 	_ = gotCSV.SetTimer(timer)
 
 	if timer.duration != int(timeWant) {

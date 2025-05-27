@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/csv"
 	"io"
+	"math/rand"
 	"os"
 	"strconv"
 	"strings"
@@ -30,15 +31,18 @@ type QuizGame struct {
 	in           *bufio.Scanner
 	Counter      int
 	timeDuration time.Duration
+	isShuffle    bool
 }
 
-func NewQuizGame(csvReader io.Reader, out io.Writer, in io.Reader, timeDuration time.Duration) *QuizGame {
+func NewQuizGame(csvReader io.Reader, out io.Writer, in io.Reader,
+	timeDuration time.Duration, shuffle bool) *QuizGame {
 	return &QuizGame{
 		csvReader:    csvReader,
 		out:          out,
 		in:           bufio.NewScanner(in),
 		Counter:      0,
 		timeDuration: timeDuration,
+		isShuffle:    shuffle,
 	}
 }
 
@@ -47,6 +51,12 @@ func (q *QuizGame) Read() ([][]string, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	if q.isShuffle {
+		rand.Shuffle(len(records), func(i, j int) {
+			records[i], records[j] = records[j], records[i]
+		})
 	}
 
 	return records, nil
@@ -77,7 +87,7 @@ func (q *QuizGame) start(records [][]string) {
 		question := record[0]
 		correctAnswer := record[1]
 		q.out.Write([]byte(question + "\n"))
-		userAnswer := q.readLine()
+		userAnswer := strings.TrimSpace(q.readLine())
 		if correctAnswer == userAnswer {
 			q.Counter++
 		}
